@@ -407,7 +407,7 @@
                     .filter(f => f.type === 'file' && f.name.endsWith('.html'))
                     .map(f => ({
                         name: f.name,
-                        url: `/${folder}/${f.name}`,
+                        url: `${folder}/${f.name}`,
                         date: (f.name.match(/^(\d{4}-\d{2}-\d{2})/) || [])[1] || '',
                         title: f.name.replace(/\.html$/, '').replace(/_/g, ' ').replace(/^\d{4}-\d{2}-\d{2}-/, '')
                     }))
