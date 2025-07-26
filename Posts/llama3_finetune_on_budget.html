@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How I Customized Llama 3.1 on a Budget</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        /* Nothing dotted font simulation */
+        @font-face {
+            font-family: 'Nothing';
+            src: local('JetBrains Mono'), local('Monaco'), local('Menlo');
+            font-weight: 300 900;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.7;
+            color: #1a1a1a;
+            background: #ffffff;
+            min-height: 100vh;
+            font-weight: 400;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            overflow: hidden;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e5e5e5;
+        }
+
+        .hero {
+            background: #000000;
+            color: #ffffff;
+            padding: 4rem 3rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: radial-gradient(circle, #333333 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.3;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-family: 'Nothing', 'JetBrains Mono', monospace;
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #ffffff;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+
+        .hero .subtitle {
+            font-size: 1.3rem;
+            opacity: 0.85;
+            font-weight: 300;
+            margin-bottom: 2rem;
+            color: #cccccc;
+        }
+
+        .hero .meta {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            font-family: 'Nothing', 'JetBrains Mono', monospace;
+        }
+
+        .content {
+            padding: 3rem;
+            background: #ffffff;
+        }
+
+        .section {
+            margin-bottom: 3rem;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s ease-out forwards;
+        }
+
+        .section:nth-child(1) { animation-delay: 0.1s; }
+        .section:nth-child(2) { animation-delay: 0.2s; }
+        .section:nth-child(3) { animation-delay: 0.3s; }
+        .section:nth-child(4) { animation-delay: 0.4s; }
+        .section:nth-child(5) { animation-delay: 0.5s; }
+        .section:nth-child(6) { animation-delay: 0.6s; }
+        .section:nth-child(7) { animation-delay: 0.7s; }
+        .section:nth-child(8) { animation-delay: 0.8s; }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .animated-element {
+            animation: slideIn 0.6s ease-out;
+        }
+
+        .pulse-on-hover:hover {
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        h2 {
+            font-family: 'Nothing', 'JetBrains Mono', monospace;
+            font-size: 2.2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #000000;
+            position: relative;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 0.5rem;
+        }
+
+        h3 {
+            font-family: 'Nothing', 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin: 2rem 0 1rem 0;
+            color: #1a1a1a;
+        }
+
+        p {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            color: #2a2a2a;
+            line-height: 1.8;
+        }
+
+        strong {
+            color: #000000;
+            font-weight: 600;
+        }
+
+        .highlight-box {
+            background: #f8f8f8;
+            border: 2px solid #000000;
+            padding: 2rem;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .highlight-box::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: #000000;
+            z-index: -1;
+            transform: translate(4px, 4px);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: #ffffff;
+            padding: 2rem;
+            border: 2px solid #000000;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            box-shadow: 4px 4px 0px #000000;
+        }
+
+        .stat-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px #000000;
+        }
+
+        .stat-number {
+            font-family: 'Nothing', 'JetBrains Mono', monospace;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #000000;
+            display: block;
+        }
+
+        .stat-label {
+            color: #1a1a1a;
+            font-weight: 600;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            display: block;
+        }
+
+        .code-block {
+            background: #1a1a1a;
+            color: #ffffff;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            font-family: 'Nothing', 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            position: relative;
+            border: 2px solid #000000;
+        }
+
+        .code-block::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: #000000;
+            z-index: -1;
+            transform: translate(4px, 4px);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin: 2rem 0;
+            border: 2px solid #000000;
+            position: relative;
+        }
+
+        .table-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: #000000;
+            z-index: -1;
+            transform: translate(4px, 4px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #ffffff;
+        }
+
+        th, td {
+            padding: 1rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e5e5;
+            font-family: 'Nothing', 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: #1a1a1a;
+        }
+
+        th {
+            background: #000000;
+            color: #ffffff;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background: #f8f8f8;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #000000;
+            color: #ffffff;
+            padding: 0.3rem 0.8rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin: 0.2rem;
+            font-family: 'Nothing', 'JetBrains Mono', monospace;
+        }
+
+        .emoji {
+            font-size: 1.2em;
+            margin-right: 0.5rem;
+        }
+
+        .cta-section {
+            background: #000000;
+            color: #ffffff;
+            padding: 3rem;
+            text-align: center;
+            margin-top: 3rem;
+        }
+
+        .cta-section h2 {
+            color: #ffffff;
+            border-bottom: 2px solid #ffffff;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: #ffffff;
+            color: #000000;
+            padding: 1rem 2rem;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: transform 0.3s ease;
+            font-family: 'Nothing', 'JetBrains Mono', monospace;
+            border: 2px solid #ffffff;
+            position: relative;
+        }
+
+        .cta-button::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: #ffffff;
+            z-index: -1;
+            transform: translate(0, 0);
+            transition: transform 0.3s ease;
+        }
+
+        .cta-button:hover {
+            transform: translate(-2px, -2px);
+        }
+
+        .cta-button:hover::before {
+            transform: translate(4px, 4px);
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .tech-item {
+            background: #ffffff;
+            padding: 0.8rem 1.2rem;
+            font-weight: 500;
+            color: #000000;
+            border: 2px solid #000000;
+            transition: all 0.3s ease;
+            font-family: 'Nothing', 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            position: relative;
+        }
+
+        .tech-item::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: #000000;
+            z-index: -1;
+            transform: translate(0, 0);
+            transition: transform 0.3s ease;
+        }
+
+        .tech-item:hover {
+            background: #000000;
+            color: #ffffff;
+            transform: translate(-2px, -2px);
+        }
+
+        .tech-item:hover::before {
+            transform: translate(4px, 4px);
+        }
+
+        @media (max-width: 768px) {
+            .hero {
+                padding: 2rem 1.5rem;
+            }
+            
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .content {
+                padding: 2rem 1.5rem;
+            }
+            
+            .hero .meta {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+
+        .loading-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #000000;
+            transform-origin: left;
+            animation: loading 2s ease-out forwards;
+            z-index: 1000;
+        }
+
+        @keyframes loading {
+            0% { transform: scaleX(0); }
+            100% { transform: scaleX(1); }
+        }
+
+        /* Dotted pattern overlay for Nothing font effect */
+        .nothing-text {
+            position: relative;
+        }
+
+        .nothing-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            color: transparent;
+            background-image: radial-gradient(circle, currentColor 30%, transparent 30%);
+            background-size: 3px 3px;
+            -webkit-background-clip: text;
+            background-clip: text;
+            pointer-events: none;
+        }
+
+        /* Minimalist scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #000000;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #333333;
+        }
+
+        /* Selection styling */
+        ::selection {
+            background: #000000;
+            color: #ffffff;
+        }
+
+        ::-moz-selection {
+            background: #000000;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-animation"></div>
+    
+    <div class="container">
+        <header class="hero">
+            <div class="hero-content">
+                <h1 class="nothing-text" data-text="How I Customized Llama 3.1 on a Budget">How I Customized Llama 3.1 on a Budget</h1>
+                <p class="subtitle">Democratizing AI: Fine‑tuning Large Language Models with Limited Resources</p>
+                <div class="meta">
+                    <span>Graduate Student Research</span>
+                    <span>Northeastern University</span>
+                    <span>Budget-Friendly AI</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="content">
+            <section class="section">
+                <h2>Why I Took on This Challenge</h2>
+                <p>As a graduate student at Northeastern University, I was amazed by what big language models like Meta's Llama 3.1 can do. But every guide I read said you needed giant, expensive GPUs and loads of storage to fine‑tune them—something I simply didn't have. So I set out to prove it: <strong>you don't need a Fortune 500 budget to personalize a state‑of‑the‑art model</strong>.</p>
+            </section>
+
+            <section class="section">
+                <h2>The Hurdles: Time, Memory, and Disk</h2>
+                <p>Fine‑tuning an 8 billion‑parameter model throws up three big roadblocks:</p>
+                
+                <!-- AI Infrastructure Illustration -->
+                <div style="text-align: center; margin: 2rem 0;">
+                    <svg width="100%" height="200" viewBox="0 0 800 200" style="border: 2px solid #000; background: #f8f8f8;">
+                        <defs>
+                            <pattern id="dots" patternUnits="userSpaceOnUse" width="10" height="10">
+                                <circle cx="5" cy="5" r="1" fill="#ccc"/>
+                            </pattern>
+                        </defs>
+                        <rect width="800" height="200" fill="url(#dots)"/>
+                        
+                        <!-- GPU Memory -->
+                        <rect x="50" y="50" width="150" height="100" fill="#fff" stroke="#000" stroke-width="2"/>
+                        <text x="125" y="90" text-anchor="middle" font-family="monospace" font-size="12" font-weight="bold">GPU</text>
+                        <text x="125" y="110" text-anchor="middle" font-family="monospace" font-size="10">16GB RAM</text>
+                        <text x="125" y="125" text-anchor="middle" font-family="monospace" font-size="10">REQUIRED</text>
+                        
+                        <!-- Time Clock -->
+                        <circle cx="400" cy="100" r="50" fill="#fff" stroke="#000" stroke-width="2"/>
+                        <line x1="400" y1="100" x2="400" y2="70" stroke="#000" stroke-width="3"/>
+                        <line x1="400" y1="100" x2="420" y2="100" stroke="#000" stroke-width="2"/>
+                        <text x="400" y="175" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold">4 HOUR LIMIT</text>
+                        
+                        <!-- Disk Storage -->
+                        <rect x="600" y="50" width="150" height="100" fill="#fff" stroke="#000" stroke-width="2"/>
+                        <rect x="620" y="70" width="110" height="15" fill="#000"/>
+                        <rect x="620" y="90" width="110" height="15" fill="#000"/>
+                        <rect x="620" y="110" width="110" height="15" fill="#000"/>
+                        <text x="675" y="145" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold">DISK QUOTA</text>
+                    </svg>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card pulse-on-hover">
+                        <div class="stat-number">16GB</div>
+                        <div class="stat-label">GPU RAM Required</div>
+                    </div>
+                    <div class="stat-card pulse-on-hover">
+                        <div class="stat-number">4hrs</div>
+                        <div class="stat-label">GPU Time Limit</div>
+                    </div>
+                    <div class="stat-card pulse-on-hover">
+                        <div class="stat-number">Limited</div>
+                        <div class="stat-label">Disk Storage</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>My Secret Weapon: LoRA (Low‑Rank Adaptation)</h2>
+                <p>Instead of retraining 8 billion weights, LoRA tacks on small "adapter" matrices. Think of it as fine‑tuning a car's suspension, rather than redesigning the entire engine.</p>
+                
+                <!-- LoRA Visualization -->
+                <div style="text-align: center; margin: 2rem 0;">
+                    <svg width="100%" height="300" viewBox="0 0 800 300" style="border: 2px solid #000; background: #f8f8f8;">
+                        <!-- Full Model -->
+                        <rect x="50" y="50" width="200" height="200" fill="#000" stroke="#000" stroke-width="2"/>
+                        <text x="150" y="30" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold">FULL MODEL</text>
+                        <text x="150" y="270" text-anchor="middle" font-family="monospace" font-size="12">8B Parameters</text>
+                        
+                        <!-- Arrow -->
+                        <path d="M 280 150 L 340 150" stroke="#000" stroke-width="3" marker-end="url(#arrowhead)"/>
+                        <text x="310" y="140" text-anchor="middle" font-family="monospace" font-size="12" font-weight="bold">VS</text>
+                        
+                        <!-- LoRA Model -->
+                        <rect x="370" y="100" width="100" height="100" fill="#fff" stroke="#000" stroke-width="2"/>
+                        <rect x="390" y="120" width="60" height="10" fill="#000"/>
+                        <rect x="390" y="140" width="60" height="10" fill="#000"/>
+                        <rect x="390" y="160" width="60" height="10" fill="#000"/>
+                        <text x="420" y="80" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold">LoRA</text>
+                        <text x="420" y="270" text-anchor="middle" font-family="monospace" font-size="12">65K Parameters</text>
+                        
+                        <!-- Efficiency Badge -->
+                        <circle cx="600" cy="150" r="80" fill="#fff" stroke="#000" stroke-width="3"/>
+                        <text x="600" y="140" text-anchor="middle" font-family="monospace" font-size="20" font-weight="bold">250×</text>
+                        <text x="600" y="160" text-anchor="middle" font-family="monospace" font-size="12">FEWER</text>
+                        <text x="600" y="175" text-anchor="middle" font-family="monospace" font-size="12">PARAMS</text>
+                        
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#000"/>
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+                
+                <div class="highlight-box animated-element">
+                    <h3>Parameter Comparison</h3>
+                    <p><strong>Full weight matrix:</strong> 4,096 × 4,096 = 16.7 million parameters</p>
+                    <p><strong>LoRA (rank 8):</strong> 4,096 × 8 + 8 × 4,096 = 65,536 parameters</p>
+                    <p><strong>That's 250× fewer parameters!</strong></p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card pulse-on-hover">
+                        <div class="stat-number">81MB</div>
+                        <div class="stat-label">Mini (rank 8)</div>
+                    </div>
+                    <div class="stat-card pulse-on-hover">
+                        <div class="stat-number">161MB</div>
+                        <div class="stat-label">Medium (rank 16)</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>My Setup on Northeastern's Cluster</h2>
+                <p>I tapped into the Discovery cluster, which has:</p>
+                
+                <div class="stats-grid">
+                    <div class="stat-card pulse-on-hover">
+                        <div class="stat-number">141GB</div>
+                        <div class="stat-label">H200 GPU VRAM</div>
+                    </div>
+                    <div class="stat-card pulse-on-hover">
+                        <div class="stat-number">40GB</div>
+                        <div class="stat-label">A100 GPU VRAM</div>
+                    </div>
+                    <div class="stat-card pulse-on-hover">
+                        <div class="stat-number">32GB</div>
+                        <div class="stat-label">V100 GPU VRAM</div>
+                    </div>
+                </div>
+
+                <p>Jobs are managed by SLURM, with a hard 4‑hour limit. To avoid eating disk quota, I redirected all caches to scratch space:</p>
+                
+                <div class="code-block">
+export CACHE_DIR="${SCRATCH}/llama3_finetune/cache/huggingface"
+export HF_HOME="$CACHE_DIR"
+export TRANSFORMERS_CACHE="$CACHE_DIR"
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>Organizing the Project</h2>
+                <p>I called it <strong>LlamaVox</strong>, with a simple structure:</p>
+                
+                <div class="code-block">
+LlamaVox/
+├── config/      # LoRA settings
+├── data/        # Training files
+├── models/      # Saved adapters
+├── slurm/       # Job scripts
+└── src/         # Training code
+                </div>
+
+                <h3>My Tech Stack:</h3>
+                <div class="tech-stack">
+                    <span class="tech-item">PyTorch 2.6.0</span>
+                    <span class="tech-item">Transformers 4.53.0</span>
+                    <span class="tech-item">PEFT 0.16.0</span>
+                    <span class="tech-item">TRL 0.19.0</span>
+                    <span class="tech-item">Accelerate</span>
+                    <span class="tech-item">bitsandbytes</span>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>Prepping the Data</h2>
+                <p>I built three datasets:</p>
+                
+                <div class="stats-grid">
+                    <div class="stat-card pulse-on-hover">
+                        <div class="stat-number">5K</div>
+                        <div class="stat-label">Mini Dataset (2.2 MB)</div>
+                    </div>
+                    <div class="stat-card pulse-on-hover">
+                        <div class="stat-number">50K</div>
+                        <div class="stat-label">Medium Dataset</div>
+                    </div>
+                    <div class="stat-card pulse-on-hover">
+                        <div class="stat-number">1K</div>
+                        <div class="stat-label">Synthetic Dataset</div>
+                    </div>
+                </div>
+
+                <p>Each example looked like this:</p>
+                <div class="code-block">
+{
+  "conversations": [
+    {"role": "user", "content": "What are the main challenges of urban planning?"},
+    {"role": "assistant", "content": "Urban planning faces several key challenges..."}
+  ]
+}
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>Running the Training Jobs</h2>
+                <p>Here's a snippet of my SLURM script for an H200 GPU:</p>
+                
+                <div class="code-block">
+#!/bin/bash
+#SBATCH --job-name=llama3_h200
+#SBATCH --time=4:00:00
+#SBATCH --gres=gpu:h200:1
+#SBATCH --mem=96G
+#SBATCH --cpus-per-task=16
+
+python src/train.py \
+  --model llama-3.1 \
+  --dataset data/mini.json \
+  --lora_rank 8 \
+  --output_dir models/mini_h200
+                </div>
+
+                <div class="highlight-box">
+                    <h3>Mini Dataset Results on H200</h3>
+                    <p><strong>Start:</strong> July 7, 2025 8:06 PM EDT</p>
+                    <p><strong>Runtime:</strong> 18 minutes</p>
+                    <p><strong>Loss drop:</strong> 0.1164 → 0.0229</p>
+                    <p><strong>Token accuracy:</strong> 98.98%</p>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>GPU Performance Comparison</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>GPU</th>
+                                <th>VRAM</th>
+                                <th>Mini (5K)</th>
+                                <th>Medium (50K)</th>
+                                <th>Adapter Size</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>H200</strong></td>
+                                <td>141 GB</td>
+                                <td>18 min</td>
+                                <td>~2.5 hours</td>
+                                <td>81–161 MB</td>
+                            </tr>
+                            <tr>
+                                <td><strong>A100</strong></td>
+                                <td>40 GB</td>
+                                <td>25 min</td>
+                                <td>~3 hours</td>
+                                <td>81–161 MB</td>
+                            </tr>
+                            <tr>
+                                <td><strong>V100</strong></td>
+                                <td>32 GB</td>
+                                <td>40 min</td>
+                                <td>Failed</td>
+                                <td>81 MB only</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card pulse-on-hover">
+                        <div class="stat-number">H200</div>
+                        <div class="stat-label">Blistering speed, but scarce</div>
+                    </div>
+                    <div class="stat-card pulse-on-hover">
+                        <div class="stat-number">A100</div>
+                        <div class="stat-label">Great balance of power & availability</div>
+                    </div>
+                    <div class="stat-card pulse-on-hover">
+                        <div class="stat-number">V100</div>
+                        <div class="stat-label">OK for tiny jobs, hits 4hr wall</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>Performance Optimization Tricks</h2>
+                <div class="tech-stack">
+                    <span class="tech-item">Gradient Accumulation</span>
+                    <span class="tech-item">Mixed-Precision Training</span>
+                    <span class="tech-item">8-bit Quantization</span>
+                    <span class="tech-item">Smart Checkpointing</span>
+                </div>
+                
+                <p><strong>Gradient Accumulation</strong> – Fake bigger batches with less memory.</p>
+                <p><strong>Mixed‑Precision Training</strong> – Use 16‑bit floats to halve memory use.</p>
+                <p><strong>8‑bit Quantization</strong> – Load the base model in 8‑bit, freeing up VRAM.</p>
+                <p><strong>Checkpointing</strong> – Save every 10 minutes so you can resume if you hit the time limit.</p>
+            </section>
+
+            <section class="section">
+                <h2>Troubleshooting: Issues & Fixes</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Issue</th>
+                                <th>Status</th>
+                                <th>Fix Summary</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Flash Attention Compatibility</td>
+                                <td><span class="tag">✅ Fixed</span></td>
+                                <td>Uninstalled flash_attn; set attn_implementation="eager"</td>
+                            </tr>
+                            <tr>
+                                <td>Disk Quota Exceeded</td>
+                                <td><span class="tag">✅ Fixed</span></td>
+                                <td>Redirected HF cache to scratch space</td>
+                            </tr>
+                            <tr>
+                                <td>Hugging Face Authentication Errors</td>
+                                <td><span class="tag">✅ Fixed</span></td>
+                                <td>Added explicit huggingface_hub.login() and token management</td>
+                            </tr>
+                            <tr>
+                                <td>Environment Setup Complexity</td>
+                                <td><span class="tag">✅ Fixed</span></td>
+                                <td>Created run_model.sh for automated setup and GPU checks</td>
+                            </tr>
+                            <tr>
+                                <td>Out-of-Memory (OOM) Errors</td>
+                                <td><span class="tag">📋 Ongoing</span></td>
+                                <td>8‑bit quantization, smaller batches, request more VRAM, monitor</td>
+                            </tr>
+                            <tr>
+                                <td>Model Access & Permissions</td>
+                                <td><span class="tag">✅ Fixed</span></td>
+                                <td>Verified permissions; added access checks before download attempts</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>Quick Start Guide</h2>
+                <div class="code-block">
+# Grab a GPU node
+srun --gres=gpu:1 --mem=32G --time=1:00:00 --pty bash
+
+# Run the launcher
+/scratch/rajagopalmohanraj.n/llama3_finetune/run_model.sh
+                </div>
+            </section>
+        </main>
+
+        <section class="cta-section">
+            <div style="text-align: center; margin-bottom: 3rem;">
+                <svg width="100%" height="150" viewBox="0 0 800 150" style="opacity: 0.3;">
+                    <defs>
+                        <pattern id="whiteDots" patternUnits="userSpaceOnUse" width="15" height="15">
+                            <circle cx="7.5" cy="7.5" r="1.5" fill="rgba(255,255,255,0.2)"/>
+                        </pattern>
+                    </defs>
+                    <rect width="800" height="150" fill="url(#whiteDots)"/>
+                    
+                    <!-- Rocket Launch Icon -->
+                    <polygon points="400,30 390,100 410,100" fill="rgba(255,255,255,0.4)" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+                    <polygon points="400,20 395,35 405,35" fill="rgba(255,255,255,0.4)"/>
+                    <circle cx="385" cy="110" r="8" fill="rgba(255,255,255,0.3)"/>
+                    <circle cx="415" cy="110" r="8" fill="rgba(255,255,255,0.3)"/>
+                    
+                    <!-- Exhaust flames -->
+                    <polygon points="390,100 385,120 395,115" fill="rgba(255,255,255,0.2)"/>
+                    <polygon points="410,100 415,120 405,115" fill="rgba(255,255,255,0.2)"/>
+                    <polygon points="400,100 395,125 405,125" fill="rgba(255,255,255,0.1)"/>
+                    
+                    <!-- Text -->
+                    <text x="400" y="40" text-anchor="middle" font-family="monospace" font-size="8" fill="rgba(255,255,255,0.4)" font-weight="bold">LAUNCH YOUR</text>
+                    <text x="400" y="52" text-anchor="middle" font-family="monospace" font-size="8" fill="rgba(255,255,255,0.4)" font-weight="bold">AI PROJECT</text>
+                </svg>
+            </div>
+
+            <h2 style="margin-bottom: 2rem;">Final Thoughts & How You Can Do It Too</h2>
+            
+            <div style="max-width: 700px; margin: 0 auto; text-align: left; padding: 2rem 0; margin-bottom: 3rem;">
+                <p style="font-size: 1.2rem; line-height: 1.8; margin-bottom: 1.5rem; color: #ffffff; opacity: 0.9;">You don't need a server farm to play with cutting‑edge AI. With techniques like <strong style="color: #ffffff; opacity: 1;">LoRA</strong>, <strong style="color: #ffffff; opacity: 1;">mixed precision</strong>, <strong style="color: #ffffff; opacity: 1;">smart scheduling</strong>, and a bit of troubleshooting know‑how, you can personalize models like Llama 3.1 on a shoestring budget.</p>
+                
+                <p style="font-size: 1.1rem; line-height: 1.8; margin-bottom: 0; color: #ffffff; opacity: 0.9;">I've open‑sourced <strong style="font-family: 'Nothing', 'JetBrains Mono', monospace; color: #ffffff; opacity: 1;">LlamaVox</strong> so anyone can dive in and start fine‑tuning right away.</p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 1.5rem;">
+                <a href="https://github.com/Naveen-R-M/LlamaVox" target="_blank" class="cta-button" style="display: inline-flex; align-items: center; gap: 0.8rem; font-size: 1.1rem; padding: 1.2rem 2.5rem;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    Get Started with LlamaVox
+                </a>
+                
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.8rem 1.2rem; font-family: 'Nothing', 'JetBrains Mono', monospace; font-size: 0.9rem; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.2);">
+                        <span>⭐</span> Open Source
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.8rem 1.2rem; font-family: 'Nothing', 'JetBrains Mono', monospace; font-size: 0.9rem; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.2);">
+                        <span>🚀</span> Ready to Use
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.8rem 1.2rem; font-family: 'Nothing', 'JetBrains Mono', monospace; font-size: 0.9rem; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.2);">
+                        <span>💡</span> Budget-Friendly
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <p style="font-size: 1.1rem; font-style: italic; color: rgba(255,255,255,0.8);">Have you tried budget‑friendly fine‑tuning? Share your tips and tricks in the comments below!</p>
+                
+                <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; font-family: 'Nothing', 'JetBrains Mono', monospace; font-size: 0.9rem;">
+                    <span style="color: rgba(255,255,255,0.6);">📧 Questions? Open an issue</span>
+                    <span style="color: rgba(255,255,255,0.6);">🤝 Contributions welcome</span>
+                    <span style="color: rgba(255,255,255,0.6);">📖 Full documentation included</span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Smooth scrolling for better UX
+        document.documentElement.style.scrollBehavior = 'smooth';
+
+        // Add some interactive animations
+        const statCards = document.querySelectorAll('.stat-card');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationDelay = Math.random() * 0.5 + 's';
+                    entry.target.style.animation = 'fadeInUp 0.6s ease-out forwards';
+                }
+            });
+        });
+
+        statCards.forEach(card => observer.observe(card));
+
+        // Remove loading animation after page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loading = document.querySelector('.loading-animation');
+                if (loading) loading.remove();
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
