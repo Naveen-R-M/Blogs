@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Thumbnail</title>
+    <!-- Open Graph (Facebook, LinkedIn, Slack, etc.) -->
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="How I Customized Llama 3.1 8B on a Budget">
+    <meta property="og:description"
+        content="Fine‑tuning Llama 3.1 on shared campus GPUs with LoRA, mixed‑precision & checkpointing—all on a shoestring.">
+    <meta property="og:image" content="https://naveen-r-m.github.io/Blogs/assets/llama3_thumbnail.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="How I Customized Llama 3.1 8B on a Budget">
+    <meta name="twitter:description"
+        content="Fine‑tuning Llama 3.1 on shared campus GPUs with LoRA, mixed‑precision & checkpointing—all on a shoestring.">
+    <meta name="twitter:image" content="https://naveen-r-m.github.io/Blogs/assets/llama3_thumbnail.png">
+
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .thumbnail {
+            width: 1200px;
+            height: 630px;
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%);
+            position: relative;
+            overflow: hidden;
+            border: 4px solid #000000;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .thumbnail::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: radial-gradient(circle, #333333 1px, transparent 1px);
+            background-size: 30px 30px;
+            opacity: 0.15;
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem;
+            text-align: center;
+        }
+
+        .title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 4rem;
+            font-weight: 800;
+            color: #ffffff;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.02em;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .subtitle {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 400;
+            color: #cccccc;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .highlight {
+            background: linear-gradient(45deg, #ffffff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 900;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 2rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #ffffff;
+            display: block;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: #cccccc;
+            margin-top: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .tech-visual {
+            position: absolute;
+            top: 50px;
+            right: 50px;
+            width: 300px;
+            height: 200px;
+            opacity: 0.3;
+        }
+
+        .gpu-icon {
+            position: absolute;
+            bottom: 50px;
+            left: 50px;
+            width: 200px;
+            height: 120px;
+            opacity: 0.25;
+        }
+
+        .author {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.2rem;
+            color: #aaaaaa;
+            margin-top: 1rem;
+            font-weight: 500;
+        }
+
+        .university {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            color: #888888;
+            font-weight: 300;
+        }
+
+        /* Animated elements */
+        .floating-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .floating-dot:nth-child(1) {
+            top: 20%;
+            left: 15%;
+            animation-delay: 0s;
+        }
+
+        .floating-dot:nth-child(2) {
+            top: 70%;
+            right: 20%;
+            animation-delay: 1s;
+        }
+
+        .floating-dot:nth-child(3) {
+            top: 40%;
+            left: 80%;
+            animation-delay: 2s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px) scale(1);
+                opacity: 0.3;
+            }
+
+            50% {
+                transform: translateY(-20px) scale(1.2);
+                opacity: 0.6;
+            }
+        }
+
+        .corner-accent {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .corner-accent.top-left {
+            top: 30px;
+            left: 30px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .corner-accent.bottom-right {
+            bottom: 30px;
+            right: 30px;
+            border-left: none;
+            border-top: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="thumbnail">
+        <!-- Background floating dots -->
+        <div class="floating-dot"></div>
+        <div class="floating-dot"></div>
+        <div class="floating-dot"></div>
+
+        <!-- Corner accents -->
+        <div class="corner-accent top-left"></div>
+        <div class="corner-accent bottom-right"></div>
+
+        <!-- Tech visual (LoRA representation) -->
+        <svg class="tech-visual" viewBox="0 0 300 200">
+            <defs>
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                    <feMerge>
+                        <feMergeNode in="coloredBlur" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+            </defs>
+
+            <!-- Full Model -->
+            <rect x="20" y="50" width="80" height="80" fill="rgba(255,255,255,0.3)" stroke="rgba(255,255,255,0.5)"
+                stroke-width="2" filter="url(#glow)" />
+            <text x="60" y="95" text-anchor="middle" font-family="JetBrains Mono" font-size="10"
+                fill="rgba(255,255,255,0.7)">8B</text>
+
+            <!-- Arrow -->
+            <path d="M 120 90 L 160 90" stroke="rgba(255,255,255,0.5)" stroke-width="2" marker-end="url(#arrow)" />
+
+            <!-- LoRA -->
+            <rect x="180" y="70" width="40" height="40" fill="rgba(255,255,255,0.4)" stroke="rgba(255,255,255,0.6)"
+                stroke-width="2" filter="url(#glow)" />
+            <rect x="185" y="75" width="30" height="4" fill="rgba(255,255,255,0.6)" />
+            <rect x="185" y="82" width="30" height="4" fill="rgba(255,255,255,0.6)" />
+            <rect x="185" y="89" width="30" height="4" fill="rgba(255,255,255,0.6)" />
+            <rect x="185" y="96" width="30" height="4" fill="rgba(255,255,255,0.6)" />
+            <rect x="185" y="103" width="30" height="4" fill="rgba(255,255,255,0.6)" />
+
+            <!-- Efficiency badge -->
+            <circle cx="260" cy="90" r="30" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.5)" stroke-width="2"
+                filter="url(#glow)" />
+            <text x="260" y="88" text-anchor="middle" font-family="JetBrains Mono" font-size="14" font-weight="bold"
+                fill="rgba(255,255,255,0.8)">250×</text>
+            <text x="260" y="98" text-anchor="middle" font-family="JetBrains Mono" font-size="6"
+                fill="rgba(255,255,255,0.6)">SMALLER</text>
+
+            <defs>
+                <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255,255,255,0.5)" />
+                </marker>
+            </defs>
+        </svg>
+
+        <!-- GPU Icon -->
+        <svg class="gpu-icon" viewBox="0 0 200 120">
+            <rect x="20" y="30" width="160" height="60" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)"
+                stroke-width="2" rx="8" />
+            <rect x="30" y="40" width="20" height="40" fill="rgba(255,255,255,0.3)" />
+            <rect x="60" y="40" width="20" height="40" fill="rgba(255,255,255,0.3)" />
+            <rect x="90" y="40" width="20" height="40" fill="rgba(255,255,255,0.3)" />
+            <rect x="120" y="40" width="20" height="40" fill="rgba(255,255,255,0.3)" />
+            <rect x="150" y="40" width="20" height="40" fill="rgba(255,255,255,0.3)" />
+            <text x="100" y="105" text-anchor="middle" font-family="JetBrains Mono" font-size="10"
+                fill="rgba(255,255,255,0.6)">H200 GPU</text>
+        </svg>
+
+        <div class="content">
+            <h1 class="title">How I <span class="highlight">Customized</span><br>Llama 3.1 on a Budget</h1>
+            <p class="subtitle">Fine-tuning 8B Parameters with LoRA</p>
+
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-number">250×</span>
+                    <span class="stat-label">Fewer Params</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">18min</span>
+                    <span class="stat-label">H200 Training</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">81MB</span>
+                    <span class="stat-label">Adapter Size</span>
+                </div>
+            </div>
+
+            <div class="author">Naveen Rajagopal Mohanraj</div>
+            <div class="university">Northeastern University</div>
+        </div>
+    </div>
+</body>
+
+</html>
